@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Support Triage · Workspace</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" type="module"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark" aria-hidden="true">✳</span><div><strong>Support Triage</strong><small>Operator workspace</small></div></div>
+      <div class="topbar-right"><span id="health" class="health health-wait">กำลังตรวจระบบ</span><a href="/backend/api" class="top-link">API routes ↗</a></div>
+    </header>
+
+    <main class="layout">
+      <section class="workspace" aria-labelledby="page-title">
+        <div class="hero">
+          <div class="eyebrow"><span class="eyebrow-line"></span> SUPPORT OPERATIONS / TRIAGE</div>
+          <h1 id="page-title">เข้าใจปัญหา<span class="title-accent">ก่อนลงมือทำ</span></h1>
+          <p>ส่งบทสนทนาของลูกค้าให้ LLM ช่วยคัดแยก แล้วให้กฎของระบบตรวจการดำเนินการอีกชั้น ทุกผลลัพธ์อ่านย้อนหลังได้</p>
+          <div class="hero-steps"><span><b>01</b> รับ ticket</span><i></i><span><b>02</b> วิเคราะห์</span><i></i><span><b>03</b> ตรวจผล</span></div>
+        </div>
+
+        <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+
+        <section class="card" aria-labelledby="create-title">
+          <div class="card-heading"><div><span class="section-index">01 / NEW TICKET</span><h2 id="create-title">เริ่มการคัดแยก</h2></div><span class="card-symbol" aria-hidden="true">↗</span></div>
+          <p class="section-copy">กรอกข้อมูลลูกค้าและข้อความตามลำดับเวลา หรือเลือก ticket ตัวอย่างจากโจทย์เพื่อทดลองกับ LLM ที่ตั้งค่าไว้</p>
+          <div class="sample-row" aria-label="ตัวอย่าง ticket">
+            <button type="button" class="sample-button" data-sample="billing">↗ Billing</button>
+            <button type="button" class="sample-button" data-sample="outage">↗ Outage (TH)</button>
+            <button type="button" class="sample-button" data-sample="darkmode">↗ Dark mode</button>
+          </div>
+
+          <form id="ticket-form">
+            <div class="form-section-label"><span>ข้อมูลลูกค้า</span><span class="rule"></span></div>
+            <div class="field-grid">
+              <label class="field"><span>แพ็กเกจ</span><select id="plan" required><option value="Free">Free</option><option value="Pro">Pro</option><option value="Enterprise">Enterprise</option></select></label>
+              <label class="field"><span>ภูมิภาค</span><input id="region" type="text" value="Thailand" maxlength="100" placeholder="เช่น Thailand"></label>
+              <label class="field"><span>จำนวนผู้ใช้งาน</span><input id="seats" type="number" min="1" value="1" required></label>
+              <label class="field"><span>ใช้งานมา (เดือน)</span><input id="tenure" type="number" min="0" value="0" required></label>
+              <label class="field"><span>เคยติดต่อ support (ครั้ง)</span><input id="prior" type="number" min="0" value="0" required></label>
+            </div>
+            <div class="form-section-label message-heading"><span>ข้อความใน ticket</span><span class="rule"></span></div>
+            <div id="message-list" class="message-list"></div>
+            <button id="add-message" type="button" class="text-button">＋ เพิ่มข้อความ</button>
+            <div class="form-footer"><p>ระบบจะใช้ thread ทั้งหมด ไม่ใช่แค่ข้อความล่าสุด</p><button id="submit-ticket" class="primary-button" type="submit"><span>วิเคราะห์ด้วย LLM</span><span aria-hidden="true">→</span></button></div>
+          </form>
+        </section>
+
+        <section class="card conversation-card" aria-labelledby="conversation-title">
+          <div class="card-heading"><div><span class="section-index">02 / CONVERSATION</span><h2 id="conversation-title">สนทนาต่อและดูประวัติ</h2></div><span class="card-symbol" aria-hidden="true">◌</span></div>
+          <p class="section-copy">หลังสร้าง ticket จะโหลด conversation อัตโนมัติ หรือวาง ID เดิมเพื่อกลับมาอ่านผล</p>
+          <form id="lookup-form" class="lookup-row"><label class="field"><span>Conversation ID</span><input id="conversation-id" type="text" placeholder="วาง conversation_id ที่นี่" autocomplete="off"></label><button class="secondary-button" type="submit">เปิดประวัติ</button></form>
+          <div id="conversation-content" class="conversation-content" hidden>
+            <div id="decision-summary"></div>
+            <form id="followup-form" class="followup-form"><label class="field"><span>ข้อความจาก operator</span><textarea id="followup-body" rows="3" maxlength="5000" placeholder="เช่น ช่วยตรวจสอบ region Asia ก่อน" required></textarea></label><div class="followup-actions"><span>ข้อความใหม่จะถูกนำไปวิเคราะห์ร่วมกับประวัติเดิม</span><button id="submit-followup" class="primary-button" type="submit">ส่งข้อความต่อ <span aria-hidden="true">→</span></button></div></form>
+            <div class="history-grid"><section><h3>ลำดับข้อความ <span id="message-count"></span></h3><div id="history-messages" class="timeline"></div></section><section><h3>การตัดสินใจ <span id="decision-count"></span></h3><div id="history-decisions" class="decision-history"></div></section></div>
+            <details class="audit-details"><summary>ดู tool calls และ side effects <span aria-hidden="true">↗</span></summary><div id="audit-content"></div></details>
+          </div>
+          <div id="conversation-empty" class="empty-state"><span aria-hidden="true">◇</span><strong>ยังไม่มี conversation ที่เปิดอยู่</strong><p>สร้าง ticket ด้านบน หรือกรอก ID เพื่อดูประวัติ</p></div>
+        </section>
+      </section>
+
+      <aside class="info-panel" aria-label="ข้อมูลระบบ">
+        <div class="info-sticky">
+          <div class="info-kicker">HOW IT WORKS <span>↗</span></div>
+          <h2>AI เสนอ<br>ระบบตัดสิน</h2>
+          <p>LLM อ่านบทสนทนาและ FAQ แล้วเสนอผลแบบมีโครงสร้าง ก่อนที่ Go policy จะตัดสิน action สุดท้าย</p>
+          <div class="flow-list"><div><span>01</span><div><strong>ค้นความรู้</strong><small>FAQ ที่เกี่ยวข้อง</small></div></div><div><span>02</span><div><strong>วิเคราะห์ด้วย LLM</strong><small>urgency · issue · action</small></div></div><div><span>03</span><div><strong>ตรวจด้วย policy</strong><small>ขอบเขตการลงมือทำ</small></div></div><div><span>04</span><div><strong>บันทึก audit</strong><small>ตรวจสอบย้อนหลังได้</small></div></div></div>
+          <div class="info-note"><span class="note-dot"></span><p>ระบบใช้ OpenAI วิเคราะห์ ticket และแสดงชื่อโมเดลที่ใช้จริงใน decision</p></div>
+        </div>
+      </aside>
+    </main>
+    <footer class="footer"><span>SUPPORT TRIAGE SERVICE</span><span>Go · Fiber · PostgreSQL · OpenAI</span></footer>
+  </div>
+</body>
+</html>
